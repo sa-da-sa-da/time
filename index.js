@@ -5,11 +5,11 @@ const https = require('https'); // 这里修正了变量名，使其更符合语
 const crypto = require('crypto');
 
 // 从环境变量中获取相关配置信息
-const kdocsUrl = process.env.kdocsUrl;
-const kdocsToken = process.env.kdocsToken;
-const webhookUrl = process.env.kdocsFrom;
-const secretKey = process.env.Secretkey; // 替换为实际的Secret key
-const kwsc = process.env.kwsc; // 考务web的secret key
+const kdocsUrl = process.env.kdocsUrl;     //替换为你的实际的表单脚本地址
+const kdocsToken = process.env.kdocsToken;  //替换为你实际的脚本令牌
+const webhookUrl = process.env.kdocsFrom;   //替换为你的实际的表单脚本地址，用来填写表单信息
+const secretKey = process.env.Secretkey; // 替换为实际的Secret key  ，替换goeasy的Secret key
+const kwsc = process.env.kwsc; // 考务web的secret key     替换goeasy的 Secret key
 
 // 设置静态页面目录，这里假设静态页面都放在名为'public'的目录下，你可以根据实际情况修改
 app.use(express.static('public'));

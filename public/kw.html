@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" width=device-width, initial-scale=1.0">
+    <title>考试相关情况数据展示</title>
+    <style>
+        /* 简单的样式设置，让列表看起来更清晰，你可以根据需求进一步美化 */
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+
+        /* 筛选、排序相关按钮的样式及悬浮可拖动设置 */
+        button {
+            margin-right: 10px;
+            padding: 5px 10px;
+            position: fixed; /* 设置为固定定位，使其悬浮 */
+            cursor: pointer; /* 鼠标悬停显示拖动光标样式 */
+            background-color: #f0f0f0; /* 按钮背景色 */
+            border: 1px solid #ccc; /* 按钮边框 */
+            border-radius: 3px; /* 按钮圆角 */
+        }
+
+        button:hover {
+            background-color: #e0e0e0; /* 鼠标悬停时��背景色变化 */
+        }
+
+        #sorting-buttons-container {
+            position: fixed;
+            top: 100px; /* 初始垂直位置，可根据需求调整 */
+            left: 10px; /* 初始水平位置，可根据需求调整 */
+            display: flex;
+            align-items: center;
+            z-index: 100; /* 设置较高的层级，确保按钮显示在其他元素之上 */
+        }
+
+        input[type="text"] {
+            margin-right: 10px;
+            padding: 5px;
+        }
+
+        /* 添加新的样式 */
+        .new-message {
+            border: 2px solid red !important;
+            animation: glow 1.5s infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px red;
+            }
+            to {
+                box-shadow: 0 0 15px red;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 用于展示数据的无序列表 -->
+    <ul id="data-display-list">
+    </ul>
+    <!-- 筛选输入框 -->
+    <input type="text" id="grade-filter-input" placeholder="输入年级进行筛选">
+    <!-- 排序按钮容器，用于包裹两个动态按钮，实现统一拖动 -->
+    <div id="sorting-buttons-container" draggable="true">
+        <!-- 按年级排序按钮 -->
+        <button id="sort-by-grade-btn">按年级升序排序</button>
+        <!-- 按时间排序按钮 -->
+        <button id="sort-by-time-btn">按时间升序排序</button>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.goeasy.io/goeasy-2.13.8.min.js"></script>
+    <script>
+        // 用于暂存原始数据以便后续操作（比如重新排序、筛选等）
+        let cachedData = null;
+        // 用于记录当前年级排序的方式，true为升序，false为降序
+        let isGradeSortAsc = true;
+        // 用于记录当前时间排序的方式，true为升序，false为降序
+        let isTimeSortAsc = true;
+
+        // 创建GoEasy实例并配置相关参数
+        var goEasy = GoEasy.getInstance({
+            host: "hangzhou.goeasy.io",  // 若是新加坡区域：singapore.goeasy.io
+            appkey: "PC-9e9c94420e274d63a1dbe2159ca4859d",   // 替换成您自己的cilent key
+            modules: ['pubsub'] // 根据需要，传入‘pubsub’或'im'，或数组方式同时传入
+        });
+
+        // 添加新的函数和变量
+        let lastMessageTime = localStorage.getItem('lastMessageTime') || '0';
+        
+        // 页面加载完成时执行的函数
+        window.addEventListener('DOMContentLoaded', async function () {
+            try {
+                const otp = await autoGetAndFillOTP();
+                await connectToGoEasy(otp);
+                await subscribeToChannel();
+                await getChannelHistory();
+            } catch (error) {
+                console.error("页面加载过程出现错误:", error);
+            }
+        });
+
+        // 从服务器获取OTP的函数
+        async function autoGetAndFillOTP() {
+            const response = await fetch('/kwotp');
+            const data = await response.json();
+            return data.goEasyOTP;
+        }
+
+        // 使用OTP连接GoEasy服务的函数
+        async function connectToGoEasy(otp) {
+            return new Promise((resolve, reject) => {
+                goEasy.connect({
+                    otp: otp,
+                    onSuccess: function () {  // 连接成功
+                        console.log("GoEasy 连接成功！");
+                        resolve();
+                    },
+                    onFailed: function (error) { // 连接失败
+                        console.log("GoEasy 连接失败，code：" + error);
+                        reject(error);
+                    },
+                });
+            });
+        }
+
+        // 订阅频道的函数
+        async function subscribeToChannel() {
+            return new Promise((resolve, reject) => {
+                goEasy.pubsub.subscribe({
+                    channel: "kaowuweb", // 替换为您的应用channel
+                    onMessage: function (message) {
+                        console.log("收到消息：", message);
+                        let innerDataArray = JSON.parse(message.content);
+                        cachedData = innerDataArray;
+                        
+                        // 存储到本地
+                        localStorage.setItem('cachedMessages', JSON.stringify(innerDataArray));
+                        
+                        innerDataArray.sort((a, b) => {
+                            const aTimeStamp = new Date(a["提交时间"].replace(/\//g, '-')).getTime();
+                            const bTimeStamp = new Date(b["提交时间"].replace(/\//g, '-')).getTime();
+                            return bTimeStamp - aTimeStamp;
+                        });
+                        updateDataDisplay(innerDataArray);
+                        resolve();
+                    },
+                    onSuccess: function () {
+                        console.log("频道订阅成功！");
+                        resolve();
+                    },
+                    onFailed: function (error) {
+                        console.log("频道订阅失败，错误码：" + error.code + ", error: " + error.content);
+                        reject(error);
+                    }
+                });
+            });
+        }
+
+        // 获取频道历史消息的函数
+        async function getChannelHistory() {
+            return new Promise((resolve, reject) => {
+                goEasy.pubsub.history({
+                    channel: 'kaowuweb', // 必需项
+                    limit: 1, // 可选项，返回的消息条数，默认为10条，最多30条
+                    onSuccess: function (message) {
+                        console.log("收到消息：", message);
+                        // 解析出最内层的数组数据
+                        let innerDataArray = JSON.parse(message.content.messages[0].content);
+                        // 将原始数据暂存起来
+                        cachedData = innerDataArray;
+                        // 先按照时间从大到小排序（确保首次展示就是日期大的数据在前）
+                        innerDataArray.sort((a, b) => {
+                            const aTimeStamp = new Date(a["提交时间"].replace(/\//g, '-')).getTime();
+                            const bTimeStamp = new Date(b["提交时间"].replace(/\//g, '-')).getTime();
+                            return bTimeStamp - aTimeStamp;
+                        });
+                        updateDataDisplay(innerDataArray);
+                        resolve();
+                    },
+                    onFailed: function (error) { // 获取失败
+                        console.log("Failed to obtain history, code:" + error.code + ", error: " + error.content);
+                        reject(error);
+                    }
+                });
+            });
+        }
+
+        // 更新数据展示的函数，接收数据数组作为参数
+        function updateDataDisplay(dataArray) {
+            let dataDisplayList = document.getElementById('data-display-list');
+            dataDisplayList.innerHTML = "";
+            
+            // 获取最新消息的时间
+            if (dataArray.length > 0) {
+                const latestTime = new Date(dataArray[0]["提交时间"].replace(/\//g, '-')).getTime();
+                const storedTime = parseInt(lastMessageTime);
+                
+                // 如果有新消息，更新存储的时间
+                if (latestTime > storedTime) {
+                    lastMessageTime = latestTime;
+                    localStorage.setItem('lastMessageTime', latestTime);
+                }
+            }
+
+            // 获取上次阅读时间
+            const lastReadTime = parseInt(localStorage.getItem('lastReadTime') || '0');
+
+            dataArray.forEach(function (item, index) {
+                let listItem = document.createElement('li');
+                const itemTime = new Date(item["提交时间"].replace(/\//g, '-')).getTime();
+                
+                // 只有当消息时间大于最后阅读时间时才添加高亮类
+                if (itemTime > lastReadTime) {
+                    listItem.classList.add('new-message');
+                }
+
+                listItem.innerHTML = `
+                    <span style="color:#22222; font-size:20px;">提交时间：${item["提交时间"] || ""}</span>
+                    <div style="margin: 10px 3px 10px 3px;font-family: "Helvetica Neue";">
+                        <strong>内容：</strong>${item["选择内容"] || ""} 
+                        <strong></strong>${item["补充填空"] || ""}
+                        <strong>教室号：</strong>${item["教室号"] || "没填"}
+                        <strong>年级：</strong>${item["年级"] || "没填"}
+                        <br>
+                    </div>`;
+
+                // 添加点击事件处理器
+                listItem.addEventListener('click', function() {
+                    this.classList.remove('new-message');
+                    localStorage.setItem('lastReadTime', itemTime);
+                });
+
+                if (index < dataArray.length - 1) {
+                    listItem.style.borderBottom = '3px solid #ccc';
+                }
+                dataDisplayList.appendChild(listItem);
+            });
+        }
+
+        // 按年级排序的函数，根据当前的排序方式（升序或降序）行排序
+        function sortDataByGrade() {
+            if (cachedData) {
+                cachedData.sort((a, b) => {
+                    // 根据当前排序方式进行年级比较排序
+                    const gradeCompare = isGradeSortAsc? a["年级"].localeCompare(b["年级"]) : b["年级"].localeCompare(a["年级"]);
+                    if (gradeCompare!== 0) {
+                        return gradeCompare;
+                    }
+                    // 如果年级相同，再按照时间从大到小排序
+                    const aTimeStamp = new Date(a["提交时间"].replace(/\//g, '-')).getTime();
+                    const bTimeStamp = new Date(b["提交时间"].replace(/\//g, '-')).getTime();
+                    return bTimeStamp - aTimeStamp;
+                });
+                updateDataDisplay(cachedData);
+                // 切换排序方式，下次点击按钮时按相反方式排序
+                isGradeSortAsc =!isGradeSortAsc;
+                // 根据新的排序方式更新按钮文本
+                const gradeSortBtn = document.getElementById('sort-by-grade-btn');
+                gradeSortBtn.textContent = isGradeSortAsc? '按年级升序排序' : '按年级降序排序';
+            }
+        }
+
+        // 按时间排序的函数，根据当前的排序方式（升序或降序）进行排序
+        function sortDataByTime() {
+            if (cachedData) {
+                cachedData.sort((a, b) => {
+                    const aTimeStamp = new Date(a["提交时间"].replace(/\//g, '-')).getTime();
+                    const bTimeStamp = new Date(b["提交时间"].replace(/\//g, '-')).getTime();
+                    return isTimeSortAsc? aTimeStamp - bTimeStamp : bTimeStamp - aTimeStamp;
+                });
+                updateDataDisplay(cachedData);
+                // 切换排序方式，下次点击按钮时按相反方式排序
+                isTimeSortAsc =!isTimeSortAsc;
+                // 根据新的排序方式更新按钮文本
+                const timeSortBtn = document.getElementById('sort-by-time-btn');
+                timeSortBtn.textContent = isTimeSortAsc? '按时间升序排序' : '按时间降序排序';
+            }
+        }
+
+        // 根据输入的年级进行筛选数据的函数，筛选后再按照时间从大到小排序
+        function filterDataByGrade() {
+            const filterInput = document.getElementById('grade-filter-input').value.trim();
+            if (cachedData && filterInput) {
+                const filteredData = cachedData.filter(item => item["年级"].includes(filterInput));
+                // 对筛选后的数据按照时间从大到小排序
+                filteredData.sort((a, b) => {
+                    const aTimeStamp = new Date(a["提交时间"].replace(/\//g, '-')).getTime();
+                    const bTimeStamp = new Date(b["提交时间"].replace(/\//g, '-')).getTime();
+                    return bTimeStamp - aTimeStamp;
+                });
+                updateDataDisplay(filteredData);
+            } else {
+                updateDataDisplay(cachedData);
+            }
+        }
+
+        // 处理按钮拖动开始事件，记录初始位置（针对按钮容器）
+        function handleDragStart(event) {
+            event.dataTransfer.setData("text/plain", "");
+            const container = document.getElementById('sorting-buttons-container');
+            container.dataset.startX = event.clientX;
+            container.dataset.startY = event.clientY;
+        }
+
+        // 处理按钮拖动过程事件，实时更新位置（针对按钮容器）
+        function handleDragOver(event) {
+            event.preventDefault();
+            return false;
+        }
+
+        // 处理按钮拖动结束事件，根据移动的偏移量设置最终位置（针对按钮容器）
+        function handleDragEnd(event) {
+            const container = document.getElementById('sorting-buttons-container');
+            const dx = event.clientX - parseInt(container.dataset.startX);
+            const dy = event.clientY - parseInt(container.dataset.startY);
+            container.style.left = (parseInt(container.style.left) || 0) + dx + "px";
+            container.style.top = (parseInt(container.style.top) || 0) + dy + "px";
+        }
+
+        // 为排序和筛选按钮添加相关事件监听器
+        const sortingButtonsContainer = document.getElementById('sorting-buttons-container');
+        sortingButtonsContainer.addEventListener('dragstart', handleDragStart);
+        sortingButtonsContainer.addEventListener('dragover', handleDragOver);
+        sortingButtonsContainer.addEventListener('dragend', handleDragEnd);
+
+        document.getElementById('sort-by-grade-btn').addEventListener('click', sortDataByGrade);
+        document.getElementById('sort-by-time-btn').addEventListener('click', sortDataByTime);
+        document.getElementById('grade-filter-input').addEventListener('keyup', filterDataByGrade);
+
+        // 页面加载时，从本地存储加载数据
+        window.addEventListener('DOMContentLoaded', function() {
+            const cachedMessages = localStorage.getItem('cachedMessages');
+            if (cachedMessages) {
+                const messages = JSON.parse(cachedMessages);
+                cachedData = messages;
+                updateDataDisplay(messages);
+            }
+        });
+    </script>
+</body>
+
+</html>
