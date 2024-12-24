@@ -5,15 +5,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 监考老师要填写的考务表单 跳转 考务表单
 function callexam() {
-    window.open("https://www.baidu.com", "_blank"); // 填写 你 的 考务表单
+    window.open("https://f.wps.cn/g/Mos5uoMT", "_blank"); // 填写 你 的 考务表单
 }function kwbutton(){
-    window.open("./kw.html", "_blank");  //填写你的kw网址
+    window.open("https://time.sakaay.com/kw.html", "_blank");
 }
-
 function adminbutton(){
-    window.open("https://www.kdocs.cn/etapps/workbench/w/MCIYxWUs", "_blank");//填写管理员入口工具台网址
+    window.open("https://www.kdocs.cn/etapps/workbench/w/MCIYxWUs", "_blank");
 }
-
 function toggleFullscreen() {
     const fullscreenButton = document.getElementById('fullscreenButton');
 
@@ -133,6 +131,55 @@ function wait(duration) {
 }
 
 
+//暂时被弃用了 等待时机
+function playBell(type) {
+    Swal.fire({
+        title: '确定播放铃声吗？',
+        showCancelButton: true,
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        position: 'center',
+        customClass: {
+            container: 'your-custom-class'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let audio;
+            switch (type) {
+                case 1:
+                    audio = new Audio('https://timezk.oss-cn-beijing.aliyuncs.com/03%E5%93%A8%E5%A3%B0%E4%B8%80%E9%95%BF.mp3');
+                    setTimeout(() => {
+                        const audio2 = new Audio('https://timezk.oss-cn-beijing.aliyuncs.com/11%E7%8E%B0%E5%9C%A8%E5%88%86%E5%8F%91%E8%AF%95%E5%8D%B7.mp3');
+                        audio2.play();
+                    }, 1000);
+                    break;
+                case 2:
+                    audio = new Audio('https://timezk.oss-cn-beijing.aliyuncs.com/02%E5%93%A8%E5%A3%B0%E4%B8%80%E7%9F%AD.mp3');
+                    setTimeout(() => {
+                        const audio2 = new Audio('https://timezk.oss-cn-beijing.aliyuncs.com/12%E7%8E%B0%E5%9C%A8%E5%BC%80%E5%A7%8B%E7%AD%94%E9%A2%98.mp3');
+                        audio2.play();
+                    }, 1000);
+                    break;
+                case 3:
+                    audio = new Audio('https://timezk.oss-cn-beijing.aliyuncs.com/02%E5%93%A8%E5%A3%B0%E4%B8%80%E7%9F%AD.mp3');
+                    setTimeout(() => {
+                        const audio2 = new Audio('https://timezk.oss-cn-beijing.aliyuncs.com/13%E6%9C%80%E5%90%8E15%E5%88%86%E9%92%9F.mp3');
+                        audio2.play();
+                    }, 1000);
+                    break;
+                case 4:
+                    audio = new Audio('https://timezk.oss-cn-beijing.aliyuncs.com/03%E5%93%A8%E5%A3%B0%E4%B8%80%E9%95%BF.mp3');
+                    setTimeout(() => {
+                        const audio2 = new Audio('https://timezk.oss-cn-beijing.aliyuncs.com/14%E8%80%83%E8%AF%95%E7%BB%93%E6%9D%9F%E6%8A%8A%E7%AC%94%E6%94%BE%E4%B8%8B.mp3');
+                        audio2.play();
+                    }, 1000);
+                    break;
+            }
+            audio.play();
+        }
+    });
+
+}
 
 
 function setupTimeToggle() {
@@ -374,36 +421,34 @@ function toggleTimeDisplay(isCountdown, targetTime) {
 function setupFormButton() {
     // 直接处理点击事件，不创建新按钮
     Swal.fire({
-        title: '考务信息表单',
+        title: '请具体填写您的需要，以便精准服务于您',
         html: `
             <form id="examForm" class="custom-form">
 
                 <!-- 选择题1 -->
                 <div class="form-group">
-                    <label>1. 年级：</label>
+                    <label>1. 您的年级：</label>
                     <select id="subject" class="swal2-select" style="width: 300px; margin: 10px 0;">
-                        <option value="">请选择...</option>
                         <option value="高一">高一</option>
                         <option value="高二">高二</option>
-                        <option value="高三">高三</option>
+                        <option value="高三" selected>高三</option>
                     </select>
                 </div>
                 <!-- 选择题1 -->
                 <div class="form-group">
-                    <label>2. 问题：</label>
+                    <label>2. 您的问题：</label>
                     <select id="examType" class="swal2-select" style="width: 300px; margin: 10px 0;">
-                        <option value="">请选择...</option>
-                        <option value="学生缺换卷卡">学生缺换卷卡</option>
+                        <option value="缺调试卷题卡" selected>缺调试卷题卡</option>
                         <option value="教师上卫生间">教师上卫生间</option>
+                        <option value="其他呼叫行为">其他呼叫行为</option>
                         <option value="学生上卫生间">学生上卫生间</option>
-                        <option value="其他呼叫考务行为">其他呼叫考务行为</option>
-                        <option value="学生违规违纪行为">学生违规违纪行为</option>
+                        <option value="学生违纪行为">学生违纪行为</option>
                     </select>
                 </div>
 
                 <!-- 输入题 -->
                 <div class="form-group">
-                    <label>3. 输入：</label>
+                    <label>3. 您所在的位置：</label>
                     <input type="text" id="roomNumber" class="swal2-input" placeholder="教室/考场号，如：511" style="width: 300px; margin: 10px 0;">
                 </div>
 

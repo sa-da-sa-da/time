@@ -100,7 +100,7 @@ body {
     margin: 10px 0 5px 0;
 }
 
-/* 每个数据项样式 */
+/* 数据项样式 */
 .data-display-list li {
     margin: 10px 0 5px 0;
     padding: 8px 16px;
@@ -349,7 +349,7 @@ body {
     overflow: hidden;
     /* 防止折叠展开时内容溢出 */
     box-sizing: border-box;
-    /* 将盒模型设置为border-box，确保宽度包含边框和内边距，计算更准确 */
+    /* 将盒模型设置为border-box，确保宽度包含边框和内边距，计算更准�� */
 }
 
 /* 侧边栏的位置，右 */
@@ -559,7 +559,7 @@ footer p a img {
     display: flex;
     /* 使用flex布局方便子元素的对齐等操作 */
     justify-content: center;
-    /* 水平方向居中子元素 */
+    /* 水平��向居中子元素 */
 
 
 }
@@ -618,12 +618,73 @@ footer p a img {
     font-weight: bold;
 }
 
+/* Sweet Alert 自定义样式 */
 .custom-swal-popup {
-    width: 500px !important;
-    padding: 20px;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+    padding: 10px !important;
+    width: 280px !important;
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    margin: 0 !important;
 }
 
-.swal2-select, .swal2-input {
-    margin: 10px 0 !important;
+/* 标题样式 */
+.swal2-title {
+    color: #333 !important;
+    font-size: 10px !important;
+    font-weight: 200 !important;
+    margin-bottom: 8px !important;
+    padding: 0 !important;
+    text-align: left !important;
+}
+
+/* 下拉菜单和输入框共同样式 */
+.swal2-select,
+.swal2-input {
     width: 100% !important;
+    padding: 5px !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    color: #333 !important;
+    margin: 2px 0 6px 0 !important;
+    height: 28px !important;
+}
+
+/* 按钮容器样式 */
+.swal2-actions {
+    margin: 6px 0 0 0 !important;  /* 减小顶部边距 */
+    justify-content: flex-end !important;
+    gap: 6px !important;
+}
+
+/* 按钮样式 */
+.swal2-confirm,
+.swal2-cancel {
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+    min-width: 45px !important;
+    height: 24px !important;
+    margin: 0 !important;
+}
+
+/* 表单组样式 */
+.form-group {
+    margin-bottom: 6px !important;
+}
+
+.form-group label {
+    font-size: 12px !important;
+    margin-bottom: 2px !important;
+    color: #666 !important;
+}
+
+/* 错误提示样式 */
+.swal2-validation-message {
+    padding: 3px 6px !important;
+    margin-top: 3px !important;
+    font-size: 11px !important;
 }
